@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -9,52 +9,48 @@ import Button from '../components/Button';
 
 import s from './App.module.css';
 
-export class App extends Component {
-  state = {
-    images: [],
-    input: '',
-    page: 1,
-    loading: false,
+export function App() {
+  const [images, setImages] = useState([]);
+  const [input, setInput] = useState('');
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+
+  const handleFormSubmit = input => {
+    setInput(input);
+    setPage(1);
   };
 
-  componentDidUpdate(prevProps, prevState) {
-    const { input, page } = this.state;
-    if (prevState.input !== input) {
-      this.setState({ loading: true });
+  const handleClickButton = () => {
+    setPage(page + 1);
+  };
+
+  useEffect(() => {
+    if (input !== '' && page === 1) {
+      setLoading(true);
       api
         .fetchGallery(input, page)
-        .then(({ data }) => this.setState({ images: data.hits }))
-        .finally(() => this.setState({ loading: false }));
+        .then(({ data }) => setImages(data.hits))
+        .finally(() => setLoading(false));
     }
-    if (prevState.page !== page && page !== 1) {
-      this.setState({ loading: true });
+    if (page !== 1) {
+      setLoading(true);
       api
         .fetchGallery(input, page)
-        .then(({ data }) =>
-          this.setState({ images: [...prevState.images, ...data.hits] })
-        )
-        .finally(() => this.setState({ loading: false }));
+        .then(({ data }) => {
+          setImages([...images, ...data.hits]);
+        })
+        .finally(() => setLoading(false));
     }
-  }
+    // eslint-disable-next-line
+  }, [input, page]);
 
-  handleFormSubmit = input => {
-    this.setState({ input, page: 1 });
-  };
-
-  handleClickButton = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
-  };
-
-  render() {
-    const { images } = this.state;
-    return (
-      <div className={s.app}>
-        <Form onSubmit={this.handleFormSubmit} />
-        {this.state.loading && <Loader />}
-        {images.length !== 0 && <ImageGallery images={images} />}
-        {images.length !== 0 && <Button onClick={this.handleClickButton} />}
-        <ToastContainer autoClose={3000} />
-      </div>
-    );
-  }
+  return (
+    <div className={s.app}>
+      <Form onSubmit={handleFormSubmit} />
+      {loading && <Loader />}
+      {images.length !== 0 && <ImageGallery images={images} />}
+      {images.length !== 0 && <Button onClick={handleClickButton} />}
+      <ToastContainer autoClose={3000} />
+    </div>
+  );
 }
